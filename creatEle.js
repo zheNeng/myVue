@@ -1,89 +1,72 @@
-function creatEle(type, text) {
-    const el = document.createElement(type)
-    const textNode = document.createTextNode(text)
+const attributeExceptions = [
+    `role`,
+];
+function appendText(el, text) {
+    console.log('appendText===', text)
+    const textNode = document.createTextNode(text);
     el.appendChild(textNode);
-    return el
 }
-function appendChild(child, append = false) {
-    if (appendChild.el && !append) {
-        document.body.replaceChild(child, appendChild.el)
-        appendChild.el = child
-    } else {
-        appendChild.el = child
-        document.body.appendChild(child)
-    }
-}
-
-function Dep() {
-    this.subs = []
-    this.subsId = new Map()
-    this.addSub = function () {
-        console.log('Dep中调用addSub')
-        if (!this.subsId.has(Dep.target)) {
-            this.subs.push(Dep.target)
-            this.subsId.set(Dep.target, 1)
+function appendArray(el, children) {
+    children.forEach((child) => {
+        if (Array.isArray(child)) {
+            appendArray(el, child);
+        } else if (child instanceof window.Element) {
+            el.appendChild(child);
+        } else if (typeof child === `string` || typeof child === `number`) {
+            appendText(el, child);
         }
-
-    }
-    this.notify = function () {
-        console.log('Dep中调用notify', this.subs)
-        for (let i = 0; i < this.subs.length; i++) {
-            this.subs[i].fn()
-        }
-    }
+    });
 }
-Dep.target = null
-
-var data = { a: { b: 1, c: 2 }, d: 3 }
-function oberserver(obj) {
-    var _obj = {}
-    Object.keys(obj).forEach(key => {
-        if (Object.prototype.toString.call(obj[key]) == '[object Object]') {
-            oberserver(obj[key])
+function setStyles(el, styles) {
+    if (!styles) {
+        el.removeAttribute(`styles`);
+        return;
+    }
+    Object.keys(styles).forEach((styleName) => {
+        if (styleName in el.style) {
+            el.style[styleName] = styles[styleName]; // eslint-disable-line no-param-reassign
         } else {
-            _obj[key] = obj[key]
-            let dep = new Dep()
-            Object.defineProperty(obj, key, {
-                get() {
-                    //在这里，我们对事件进行添加
-                    console.log(`${key}数据get`)
-                    dep.addSub()
-                    return _obj[key]
-                },
-                set(newValue, old) {
-                    console.log(`${key}数据set`)
-                    if (Object.prototype.toString.call(newValue) == '[object Object]') {
-                        oberserver(newValue)
-                    } else {
-                        _obj[key] = newValue
-                    }
-                    //在这里，我们对事件进行执行
-                    dep.notify()
-                }
-            })
+            console.warn(`${styleName} is not a valid style for a <${el.tagName.toLowerCase()}>`);
         }
-    })
+    });
 }
-oberserver(data)
 
-function Watcher(exp, fn) { //exp是需要观察的属性，fn是回调
-    appendChild.el = ''
-    this.exp = exp
-    this.fn = fn
-    pushTarget(this)
-    if (typeof exp == 'string') {
-        console.log('watcher中调用data')
-        data[exp]
-    } else {
-        exp()
+function makeElement(type, textOrPropsOrChild, ...otherChildren) {
+    console.log('makeElement----', textOrPropsOrChild)
+    const el = document.createElement(type);
+    if (Array.isArray(textOrPropsOrChild)) {
+        appendArray(el, textOrPropsOrChild);
+    } else if (textOrPropsOrChild instanceof window.Element) {
+        el.appendChild(textOrPropsOrChild);
+    } else if (typeof textOrPropsOrChild === `string` || typeof textOrPropsOrChild === `number`) {
+        console.log('makeElement===', textOrPropsOrChild)
+        appendText(el, textOrPropsOrChild);
+    } else if (typeof textOrPropsOrChild === `object`) {
+        Object.keys(textOrPropsOrChild).forEach((propName) => {
+            if (propName in el || attributeExceptions.includes(propName)) {
+                const value = textOrPropsOrChild[propName];
+                if (propName === `style`) {
+                    setStyles(el, value);
+                } else if (value) {
+                    el[propName] = value;
+                }
+            } else {
+                console.warn(`${propName} is not a valid property of a <${type}>`);
+            }
+        });
     }
-}
-function pushTarget(watch) {
-    Dep.target = watch
-    console.log('设置watcher对象为全局', Dep.target)
+
+    if (otherChildren) appendArray(el, otherChildren);
+
+    return el;
 }
 
-function render() {
-    appendChild(creatEle('h1', data.d))
-}
-new Watcher(render, render)
+const a = (...args) => makeElement(`a`, ...args);
+const button = (...args) => makeElement(`button`, ...args);
+const div = (...args) => makeElement(`div`, ...args);
+const h1 = (...args) => makeElement(`h1`, ...args);
+const header = (...args) => makeElement(`header`, ...args);
+const p = (...args) => makeElement(`p`, ...args);
+const span = (...args) => makeElement(`span`, ...args);
+
+

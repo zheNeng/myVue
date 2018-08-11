@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <meta http-equiv='X-UA-Compatible' content='ie=edge'>
+    <title>Document</title>
+</head>
+
+<body>
+
+</body>
+
+<script src='./core.js'></script>
+<script src='./creatEle.js'></script>
+<script>
+    function render() {
+        var child = h1({ className: `header` }, data.d)
+        document.body.appendChild(child)
+        return function () {
+            console.log('第二次render', data.d)
+            let c = h1({ className: `header` }, data.d)
+            document.body.replaceChild(c, child)
+            child = c
+        }
+    }
+    var data = { a: { b: 1, c: 2 }, d: 'Hello, world.' }
+    oberserver(data)
+    new Watcher(render, '', true)
+    for (let i = 0; i < 10; i++) {
+        setTimeout(function () { data.d = i }, i * 200)
+    }
+</script>
