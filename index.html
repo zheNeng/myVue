@@ -15,20 +15,37 @@
 <script src='./core.js'></script>
 <script src='./creatEle.js'></script>
 <script>
+    var b = 0
     function render() {
-        var child = h1({ className: `header` }, data.d)
+
+        var renderFunc = function () {
+            return h1({ className: `header` }, data.d, div(data.a.b))
+        }
+        var child = renderFunc()
         document.body.appendChild(child)
+        let time = ''  //防止重复更新
         return function () {
-            console.log('第二次render', data.d)
-            let c = h1({ className: `header` }, data.d)
-            document.body.replaceChild(c, child)
-            child = c
+            if (time) {
+                clearTimeout(time)
+            }
+            time = setTimeout(function () {
+                b++
+                console.log('第二次render', data.d)
+                let c = renderFunc()
+                document.body.replaceChild(c, child)
+                child = c
+                time = ''
+            }, 0)
+
         }
     }
     var data = { a: { b: 1, c: 2 }, d: 'Hello, world.' }
     oberserver(data)
     new Watcher(render, '', true)
     for (let i = 0; i < 10; i++) {
-        setTimeout(function () { data.d = i }, i * 200)
+        setTimeout(function () {
+            data.a.b++
+            data.d = i
+        }, i * 200)
     }
 </script>
